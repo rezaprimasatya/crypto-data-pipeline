@@ -1,0 +1,82 @@
+version: '3.7'
+
+services:
+
+  git-sync:
+    build:
+      context: ""
+      dockerfile: docker/git-sync/git-sync.dockerfile
+    container_name: crypto-data-pipeline-git-sync
+    restart: always
+    user: root:root
+    environment:
+      - GIT_SYNC_REPO=https://github.com/Aleksey-Movchanyuk/crypto-data-pipeline.git
+      - GIT_SYNC_BRANCH=main
+      - GIT_SYNC_ROOT=/git
+      - GIT_SYNC_DEST=repo
+      - GIT_SYNC_WAIT=5 # Sync every 5 seconds
+    volumes:
+      - crypto-data-pipeline-git-sync-data:/git:z
+    networks:
+      - backbone
+    command: tail -f /dev/null
+
+  airflow-database:
+    build:
+      context: ""
+      dockerfile: docker/airflow-database/postgres/postgres.dockerfile
+    container_name: crypto-data-pipeline-airflow-database
+    restart: always
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - "5432:5432"
+    env_file:
+      - docker/airflow-database/postgres/.env
+    volumes:
+      - crypto-data-pipeline-airflow-database-data:/var/lib/postgresql/data
+    networks:
+      - backbone
+
+  airflow:
+    build:
+      context: .
+      dockerfile: docker/airflow/airflow.dockerfile
+    container_name: crypto-data-pipeline-airflow
+    restart: always
+    depends_on:
+      - airflow-database
+    environment:
+      - AIRFLOW_HOME=/opt/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__DAGS_FOLDER=/git/repo/airflow/dags
+      - AIRFLOW__CORE__PLUGINS_FOLDER=/git/repo/airflow/plugins
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /opt/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    volumes:
+      - crypto-data-pipeline-git-sync-data:/git
+      - crypto-data-pipeline-airflow-logs:/opt/airflow/log
+      - ${PWD}/docker/airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
+    networks:
+      - backbone
+
+volumes:
+  crypto-data-pipeline-git-sync-data: {}
+  crypto-data-pipeline-airflow-database-data: {}
+  crypto-data-pipeline-airflow-logs: {}
+
+networks:
+  backbone:
+    driver: bridge

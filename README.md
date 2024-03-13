@@ -23,7 +23,7 @@ To run this project, you'll need the following tools:
 To get started, clone this repository to your local machine:
 
 ```
-https://github.com/Aleksey-Movchanyuk/crypto-data-pipeline
+https://github.com/rezaprimasatya/crypto-data-pipeline
 ```
 
 
@@ -45,13 +45,3 @@ You can access the Apache Airflow UI at `http://localhost:8080`. Use the followi
 
 - Username: `airflow`
 - Password: `w0lfr1a`
-
-In the next blog post, we'll explore how to use Tableau Public to visualize the Binance data we've extracted. We'll create a dashboard that helps us better understand the price trends for BTCUSDT and ETHUSDT.
-
-## Credits
-
-This project was created by Alex M.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
